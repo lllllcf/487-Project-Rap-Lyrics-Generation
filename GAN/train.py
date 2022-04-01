@@ -1,9 +1,12 @@
+from tarfile import XGLTYPE
 import torch
 import time
 import copy
 from train_utils import get_optimizer, get_loss_fn, get_generator_loss, get_discriminator_performance, calculate_joint_loss, get_joint_performance
 from generate_rap import generate_rap
+from sentence_transformers import SentenceTransformer
 
+sen_embed = SentenceTransformer('bert-base-nli-mean-tokens')
 
 def pre_train_discriminator(args, model, dataloader, val_loader, loss_type, optim_type, lr, weight_decay, patience, device):
     model.train()
@@ -92,7 +95,7 @@ def train_model(generator, discriminator, input_loader, input_data, num_epoch, g
 
     dis_loss_all, gen_loss_all, loss_ind = [], [], []
     num_itr = 0
-    best_gen, best_dis, best_dis_loss, best_gen_loss = None, None, 0, 100
+    best_gen, best_dis, best_dis_loss, best_gen_loss = generator, discriminator, float('-inf'), float('inf')
     num_bad_epoch = 0
 
     g_optim = get_optimizer(generator, 'generator', g_para["optim_type"], g_para["lr"], g_para["weight_decay"])
@@ -110,14 +113,14 @@ def train_model(generator, discriminator, input_loader, input_data, num_epoch, g
         for batch, (X, y) in enumerate(input_loader):
             num_itr += 1
 
-            sen_input = X
+            sen_input = input_data.get_sen(X)
             num_sentences = 1
-            generated_lyrics = generate_rap(generator, sen_input, num_sentences, max_words, input_data)
+            generated_lyrics = generate_rap(generator, sen_input, num_sentences, max_words, input_data)[0]
 
-            discriminator_res = discriminator(generated_lyrics)
+            discriminator_res = discriminator(sen_embed.encode(generated_lyrics))
 
             g_optim.zero_grad()
-            g_loss, d_loss = calculate_joint_loss(discriminator_res)
+            g_loss, d_loss = calculate_joint_loss(copy.copy(discriminator_res))
             g_loss.requires_grad_().backward()
             g_optim.step()
 

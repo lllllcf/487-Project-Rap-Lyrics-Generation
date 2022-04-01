@@ -3,9 +3,12 @@ import torch.optim as optimizer
 from torch import nn
 import torch
 from generate_rap import generate_rap
+from sentence_transformers import SentenceTransformer
 
+sen_embed = SentenceTransformer('bert-base-nli-mean-tokens')
 
 def calculate_joint_loss(discriminator_res):
+    discriminator_res = discriminator_res.detach()
     g_loss = np.log(abs(discriminator_res))
     d_loss = np.log(abs(1 - discriminator_res))
     return g_loss, d_loss
@@ -14,16 +17,25 @@ def calculate_joint_loss(discriminator_res):
 def get_joint_performance(generator, discriminator, val_loader, device, max_words, final_dataset):
     val_g_loss = 0
     val_d_loss = 0
+    y_pred = []
+    y_true = []
     for (X, y) in val_loader:
-        sen_input = X
+        sen_input = final_dataset.get_sen(X)
         num_sentences = 1
         generated_lyrics = generate_rap(generator, sen_input, num_sentences, max_words, final_dataset)
-        discriminator_res = discriminator(generated_lyrics)
+        discriminator_res = discriminator(sen_embed.encode(generated_lyrics))
 
         g_loss, d_loss = calculate_joint_loss(discriminator_res)
         val_g_loss += g_loss
         val_d_loss += d_loss
-    return val_g_loss, val_d_loss
+        y_true.append(0)
+        if discriminator_res > 0:
+            y_pred.append(1)
+        else:
+            y_pred.append(0)
+
+    val_d_acc  = (np.array(y_pred) * np.array(y_true)).sum() / len(y_pred)
+    return val_d_acc, val_g_loss.item(), val_d_loss.item()
 
 
 def get_discriminator_performance(model, loss_fn, val_loader, device):

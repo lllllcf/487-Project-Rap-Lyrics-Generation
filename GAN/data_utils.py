@@ -64,6 +64,7 @@ def gen_pre_data_preprocession(rap_music, percent, gen_clean_control):
     dis_rap = rap_music[0:i_start] + rap_music[(i_start + n):]
 
     gen_pre = gen_clean(gen_pre, gen_clean_control)
+    rap_music = gen_clean(rap_music, gen_clean_control)
 
     return rap_music, gen_pre, dis_rap
 

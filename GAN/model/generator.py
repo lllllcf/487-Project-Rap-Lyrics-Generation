@@ -27,9 +27,7 @@ class Generator(nn.Module):
         self.fc = nn.Linear(self.lstm_size, n_vocab)
 
     def forward(self, x, prev_state):
-        print(x.shape)
         embed = self.embedding(x)
-        print(embed.shape)
         output, state = self.lstm(embed, prev_state)
         logits = self.fc(output)
 

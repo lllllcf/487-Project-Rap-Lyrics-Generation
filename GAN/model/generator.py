@@ -11,7 +11,7 @@ class Generator(nn.Module):
         # self.hidden_dim = hidden_dim
 
         # test_use
-        self.hidden_dim = lstm_input_size
+        self.hidden_dim = hidden_dim
 
         n_vocab = len(dataset.uniq_words)
         self.embedding = nn.Embedding(
@@ -24,7 +24,7 @@ class Generator(nn.Module):
             num_layers=self.num_layers,
             dropout=dropout,
         )
-        self.fc = nn.Linear(self.lstm_size, n_vocab)
+        self.fc = nn.Linear(self.hidden_dim, n_vocab)
 
     def forward(self, x, prev_state):
         embed = self.embedding(x)

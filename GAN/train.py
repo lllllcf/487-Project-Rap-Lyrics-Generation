@@ -111,6 +111,7 @@ def train_model(generator, discriminator, input_loader, input_data, num_epoch, g
     g_loss, d_loss = 0, 0
     for epoch in range(num_epoch):
         for batch, (X, y) in enumerate(input_loader):
+            print(batch)
             num_itr += 1
 
             sen_input = input_data.get_sen(X)
